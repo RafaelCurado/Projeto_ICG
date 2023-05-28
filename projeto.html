@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+	<title>Projeto &mdash; Simpsons House</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+	<style>
+		@font-face {
+			font-family: "SimpsonsFont";
+			src: url(Homer_Simpson_Revised.ttf);
+		}
+		
+		body {
+			background-color: #ffffff;
+			/* To use the complete page */
+			font-family: "SimpsonsFont", sans-serif;
+			margin: 0px;
+			overflow: hidden;
+		}
+		#menu {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.5);
+			font-family: "SimpsonsFont", sans-serif;
+		}
+		#entry_menu {
+			position: absolute;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0,0,0,0.5);
+			font-family: "SimpsonsFont", sans-serif;
+		}
+		.center {
+			text-align: center;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="entry_menu" class="center">
+		<p style="font-size:80px; color: #ffff00;">
+			Welcome!
+		</p>
+		<p style="font-size:50px; color: #ffffff;">
+			Click to Enter TheSimpsons World!
+		</p>
+	</div>
+	<div id="menu" class="center">
+
+		<p style="font-size:80px; color: #ffff00;">
+			Menu
+		</p>
+
+		<p style="font-size:50px; color: #ffffff;">
+			Press "T" to switch between day and night time <br/>
+			Press "C" to switch cameras
+		</p>
+
+		<p style="font-size:50px; color: #ffffff;">
+			POV Camera Controls: <br/>
+			Move: WASD<br/>
+			Jump: SPACE<br/>
+			Look: MOUSE
+		</p>
+
+		<p style="font-size:50px; color: #ffffff;">
+			Click! <br/>
+		</p>
+		
+		
+	</div>
+
+	<script type="importmap">
+	{
+		"imports": {
+			"three":  "https://threejs.org/build/three.module.js",
+			"three/addons/": "https://threejs.org/examples/jsm/"
+		}
+	}
+
+	</script>
+
+	<script type="module">
+
+		import * as THREE from 'three';
+		import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+		import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js'
+		import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+		import * as HOUSE from '/js/house.js';
+		import * as EXT from '/js/exterior.js'
+		import * as GLTFMODELS from '/js/gltfmodels.js'
+		let raycaster;
+
+		let moveForward = false;
+		let moveBackward = false;
+		let moveLeft = false;
+		let moveRight = false;
+		let canJump = false;
+
+		let prevTime = performance.now();
+		const velocity = new THREE.Vector3();
+		const direction = new THREE.Vector3();
+		const vertex = new THREE.Vector3();
+		const color = new THREE.Color();
+
+		const objects = [];
+
+		menu.style.display = 'none';
+
+
+		async function init() {
+
+			var scene = new THREE.Scene();
+			
+			
+			const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0));
+
+			let currentControl = "orbit"; 	// default control
+			var canOpenDoor = false;
+
+
+            // lawn
+
+            // create the plane geometry
+            const width = 400; // width of the plane
+            const height = 400; // height of the plane
+            const segments = 400; // number of segments in each direction
+            const planegeometry = new THREE.PlaneGeometry(width, height, segments, segments);
+
+
+			// load the grass texture
+            const textureLoader = new THREE.TextureLoader();
+            const grassTexture = textureLoader.load('./img/grass2.jpg');
+            // const material = new THREE.MeshStandardMaterial({ map: grassTexture , receiveShadow: true}); // green color
+        
+			
+
+			const planeMaterial = new THREE.MeshStandardMaterial({
+				map: grassTexture,
+				side: THREE.DoubleSide, // or THREE.FrontSide
+				shadowSide: THREE.BackSide, // Set shadowSide to BackSide
+				receiveShadow: true, // Enable shadow receiving
+			});
+
+            // create the mesh and add it to the scene
+            const lawn = new THREE.Mesh(planegeometry, planeMaterial);
+            lawn.rotation.x = -Math.PI / 2; // rotate the lawn to be horizontal
+        	scene.add(lawn);
+
+
+
+			// Adding models to the scene
+
+			var house = HOUSE.createHouse(60,40,40,2);
+			house.position.y = 0;
+			scene.add(house);
+			objects.push(house);
+
+			const door = house.getObjectByName('door');
+			var doorOpen = false;
+			const doorCloseX = 0;
+			const doorCloseZ = 0;
+			const doorOpenX = -5;
+			const doorOpenZ = -5;
+
+
+			var wood_fence1 = EXT.createWoodFence2(40);
+			wood_fence1.position.set(-60,0,-55);
+			scene.add(wood_fence1);
+			var wood_fence2 = EXT.createWoodFence2(30);
+			wood_fence2.position.set(-60,0,-55);
+			wood_fence2.rotation.y = -Math.PI/2;
+			scene.add(wood_fence2);
+			var wood_fence3 = EXT.createWoodFence2(30);
+			wood_fence3.position.set(95,0,-55);
+			wood_fence3.rotation.y = -Math.PI/2;
+			scene.add(wood_fence3);
+			var road = EXT.createRoad();
+			scene.add(road);
+
+			// gltf models
+
+			const gltfmodels = await GLTFMODELS.load(scene);
+
+
+			// LIGHT
+
+			// hemisphere light
+			const dayColor = 0x86c5e6; 			// Light blue color for the sky
+			const groundColor = 0xf2e6cf; 		// Light brown color for the ground
+			const dayIntensity = 0.1;			// Adjust the intensity value as needed (range: 0 to 1)
+			const nightIntensity = 0.2;
+			const hemisphereLight = new THREE.HemisphereLight(dayColor, groundColor, dayIntensity);
+			scene.add(hemisphereLight);
+
+			const sunColor = 0xffffff; 			// Color of the sunlight
+			const nightColor = 0x000000;
+			const sunIntensity = 0.8; 			// Intensity of the sunlight
+			const sunPosition = new THREE.Vector3(1, 1, 1); // Direction of the sunlight
+			let directionalLight = new THREE.DirectionalLight(sunColor, sunIntensity);
+			directionalLight.position.copy(sunPosition);	// Set the position/direction of the light
+			scene.add(directionalLight);
+
+			let isDaytime = true;
+
+			// BACKGROUND COLORS
+
+			//const dayTexture = textureLoader.load('./img/night.jpg');
+			//scene.background = dayTexture;
+
+
+
+			// SHADOW
+
+
+			// directionalLight.castShadow = true;
+			// // Adjust shadow camera properties
+			// directionalLight.shadow.camera.left = -10;
+			// directionalLight.shadow.camera.right = 10;
+			// directionalLight.shadow.camera.top = 10;
+			// directionalLight.shadow.camera.bottom = -10;
+
+			// directionalLight.shadow.bias = -0.001; // Adjust shadow bias if needed
+
+            plane.castShadow = true;
+			plane.receiveShadow = true;
+			lawn.castShadow = true;
+			lawn.receiveShadow = true;
+			house.castShadow = true;
+			house.receiveShadow = true;
+			wood_fence1.castShadow = true;
+			wood_fence1.receiveShadow = true;
+			wood_fence2.castShadow = true;
+			wood_fence2.receiveShadow = true;
+			wood_fence3.castShadow = true;
+			wood_fence3.receiveShadow = true;
+			lawn.castShadow = true;
+			lawn.receiveShadow = true;
+			road.castShadow = true;
+			road.receiveShadow = true;
+
+	
+			// 
+			var sceneCenter = new THREE.Object3D();
+			sceneCenter.position.set(0,0,0);
+			scene.add(sceneCenter)			
+
+			var camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 400);
+			camera.position.y = 50;
+			camera.position.z = 150;
+
+			// Point the camera to the center of the scene
+			camera.lookAt(scene.position);
+			scene.add(camera)
+
+			// The RENDERER --- To display the scene on the Web page
+			var renderer = new THREE.WebGLRenderer({ antialias: true });
+			renderer.setClearColor(new THREE.Color(0xffffff));
+			renderer.setPixelRatio(window.devicePixelRatio);
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			renderer.shadowMap.enabled = true;
+			renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Optional: Set shadow map type
+            
+			const lightblue = 0x00aaff;
+			const darkblue = 0x00001a;
+			
+			renderer.setClearColor(lightblue);
+
+			// Add the output of the renderer
+			document.body.appendChild(renderer.domElement);
+
+			// Render the scene
+			renderer.render(scene, camera);
+
+			
+
+			// CONTROLLS 
+
+			// orbit controller
+			const orbitControls = new OrbitControls( camera, renderer.domElement );
+			orbitControls.maxDistance = 200;
+			orbitControls.minDistance = 5;
+			orbitControls.minPolarAngle = 0;
+			orbitControls.maxPolarAngle = Math.PI/2.1;
+			orbitControls.update();
+
+			// pointer lock controller 
+			const pointerLockControls = new PointerLockControls(camera, document.body);
+			scene.add(pointerLockControls.getObject());
+
+			document.body.addEventListener( 'click', function () {
+				//lock mouse on screen
+				if (currentControl == "pointerlock") {
+					pointerLockControls.lock();
+				}
+			}, false );
+			
+			const onKeyDown = function ( event ) {
+				switch ( event.code ) {
+					case 'ArrowUp':
+					case 'KeyW':
+						moveForward = true;
+						break;
+					case 'ArrowLeft':
+					case 'KeyA':
+						moveLeft = true;
+						break;
+					case 'ArrowDown':
+					case 'KeyS':
+						moveBackward = true;
+						break;
+					case 'ArrowRight':
+					case 'KeyD':
+						moveRight = true;
+						break;
+					case 'Space':
+						if ( canJump === true ) velocity.y += 150;
+						canJump = false;
+						break;
+				}
+			};
+
+			const onKeyUp = function ( event ) {
+				switch ( event.code ) {
+					case 'ArrowUp':
+					case 'KeyW':
+						moveForward = false;
+						break;
+					case 'ArrowLeft':
+					case 'KeyA':
+						moveLeft = false;
+						break;
+					case 'ArrowDown':
+					case 'KeyS':
+						moveBackward = false;
+						break;
+					case 'ArrowRight':
+					case 'KeyD':
+						moveRight = false;
+						break;
+				}
+			};
+			
+			document.addEventListener( 'keydown', onKeyDown );
+			document.addEventListener( 'keyup', onKeyUp );
+
+			raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
+
+			let position = planegeometry.attributes.position;
+
+				for ( let i = 0, l = position.count; i < l; i ++ ) {
+
+					vertex.fromBufferAttribute( position, i );
+
+					vertex.x += Math.random() * 20 - 10;
+					vertex.y += Math.random() * 2;
+					vertex.z += Math.random() * 20 - 10;
+
+					position.setXYZ( i, vertex.x, vertex.y, vertex.z );
+
+				}
+
+			//planegeometry = planegeometry.toNonIndexed(); // ensure each face has unique vertices
+			//position = planegeometry.attributes.position;
+					
+			document.addEventListener("keydown", (event) => {
+			
+				if (event.code === "KeyC") {
+					// toggle between controls
+					if (currentControl === "pointerlock") {
+						// switch to orbit controls
+						currentControl = "orbit";
+						pointerLockControls.enabled = false;
+						pointerLockControls.unlock();
+						orbitControls.enabled = true;
+						console.log("Controls: Orbit");					
+					} else {
+						// switch to pointer lock controls
+						currentControl = "pointerlock";
+						pointerLockControls.enabled = true;
+						pointerLockControls.lock();
+						orbitControls.enabled = false;
+						console.log("Controls: PointerLock");
+					}
+				}
+			});
+
+			const menu = document.getElementById('menu');
+			const entry_menu = document.getElementById('entry_menu');
+
+			document.addEventListener('keydown', function(event) {
+				// Check if the pressed key is the ESC key (key code 27)
+				if (event.keyCode === 27) {
+					menu.style.display = menu.style.display === 'none' ? '' : 'none';
+					entry_menu.style.display = 'none';
+					// if (currentControl === "pointerlock") {
+					// 	pointerLockControls.lock();
+					// }
+				}
+			});
+
+			menu.addEventListener( 'click', function () {
+				menu.style.display = 'none';
+				//pointerLockControls.lock();
+			} );
+
+
+			entry_menu.addEventListener( 'click', function () {
+				entry_menu.style.display = 'none';
+				menu.style.display = '';
+				//pointerLockControls.lock();
+			} );
+
+
+			document.addEventListener("keydown", (event) => {
+				if (event.code === "KeyT") {
+					isDaytime = !isDaytime; 	// the the state
+					console.log(isDaytime);
+				}
+			});
+
+			document.addEventListener("keydown", (event) => {
+				if (event.code === "KeyE" && canOpenDoor == true) {
+					//console.log(doorInitialX);
+					doorOpen = !doorOpen;
+					console.log(doorOpen)
+					door.position.x = doorOpen ? doorOpenX : doorCloseX;
+					door.position.z = doorOpen ? doorOpenZ : doorCloseZ;
+					door.rotation.y -= Math.PI / 2;
+				}
+			});
+
+
+
+
+			// loading GLTF models that will have animation (had to put it here)
+			const loader = new GLTFLoader();
+			
+			let green_car;
+			loader.load('./models/green_car/scene.gltf', function (gltf) {
+				green_car = gltf.scene;
+				
+				scene.add(green_car);
+
+				// Set the initial position of the car
+				green_car.position.set(-100,8,130);
+				green_car.rotation.y = Math.PI / 2;
+				green_car.scale.set(36,36,36);
+				green_car.name = 'green_car';
+			});
+
+			let doctor;
+			let doctor_mixer = new THREE.AnimationMixer();
+			loader.load('./models/doctor/scene.gltf', function(gltf) {
+				doctor = gltf.scene;
+				doctor.position.set(-180,6.5,95);
+				doctor.scale.set(0.23,0.23,0.23);
+				doctor.rotation.y =  Math.PI /2;
+				
+				scene.add(doctor);
+				doctor.name = 'doctor';
+
+				doctor_mixer = new THREE.AnimationMixer(doctor);
+				const doctor_walkAnimation = doctor_mixer.clipAction(gltf.animations[0]);
+				doctor_walkAnimation.play();
+
+			});
+
+
+			let maggie;
+			let maggie_mixer = new THREE.AnimationMixer();
+			loader.load('./models/maggie/scene.gltf', function(gltf) {
+				maggie = gltf.scene;
+				maggie.position.set(0,4,-2);
+				maggie.scale.set(3,3,3);
+				maggie.rotation.y =  Math.PI ;
+				
+				scene.add(maggie);
+				maggie.name = 'maggie';
+
+				maggie_mixer = new THREE.AnimationMixer(maggie);
+				const maggie_walkAnimation = maggie_mixer.clipAction(gltf.animations[0]);
+				maggie_walkAnimation.play();
+
+			});
+
+			let marge;
+			let marge_mixer = new THREE.AnimationMixer();
+			loader.load('./models/marge/scene.gltf', function(gltf) {
+				marge = gltf.scene;
+				marge.position.set(-5,2,5);
+				marge.scale.set(4,4,4);
+				marge.rotation.y =  Math.PI /2;
+				
+				scene.add(marge);
+				marge.name = 'marge';
+
+				marge_mixer = new THREE.AnimationMixer(marge);
+				const marge_walkAnimation = marge_mixer.clipAction(gltf.animations[0]);
+				marge_walkAnimation.play();
+
+			});
+
+			let cletus;
+			let cletus_mixer = new THREE.AnimationMixer();
+			loader.load('./models/cletus/scene.gltf', function(gltf) {
+				cletus = gltf.scene;
+				cletus.position.set(0,6.5,-90);
+				cletus.scale.set(0.2,0.2,0.2);
+				//cletus.rotation.y =  Math.PI /2;
+				
+				scene.add(cletus);
+				cletus.name = 'cletus';
+
+				cletus_mixer = new THREE.AnimationMixer(cletus);
+				const cletus_walkAnimation = cletus_mixer.clipAction(gltf.animations[0]);
+				cletus_walkAnimation.play();
+
+			});
+				
+
+			const clock = new THREE.Clock();
+
+			animate();
+
+			function animate() {
+			
+				requestAnimationFrame(animate);
+
+				// Calculate the current color and intensity values based on the isDaytime variable
+				const currentColor = isDaytime ? sunColor : nightColor;
+				const currentBackgroundColor = isDaytime ? lightblue : darkblue;
+				directionalLight.color.set(currentColor);
+				renderer.setClearColor(currentBackgroundColor);
+		
+				var cd = clock.getDelta();
+				if (doctor_mixer ) doctor_mixer.update(cd);
+				if (maggie_mixer) maggie_mixer.update(cd);
+				if (marge_mixer) marge_mixer.update(cd);
+				if (cletus_mixer) cletus_mixer.update(cd);
+
+				// green car (gltf model) animation
+				if (green_car) {
+					green_car.position.x += 0.7;
+					if (green_car.position.x > 180) {
+						green_car.position.x = -180;
+					}
+				}
+				// doctor (gltf model) animation
+				if (doctor) {
+					doctor.position.x += 0.13;
+					if (doctor.position.x > 180) {
+						doctor.position.x = -180;
+					}
+				}
+
+				const time = performance.now();
+				
+				
+				if ( pointerLockControls.isLocked === true && currentControl == "pointerlock") { 	
+					raycaster.ray.origin.copy( pointerLockControls.getObject().position );
+					raycaster.ray.origin.y -= 10;
+
+					
+					const pos = pointerLockControls.getObject().position;
+
+
+					if (pos.x > -6 && pos.x < 6 && pos.z < 32 && pos.z > 9) {
+						canOpenDoor = true;
+					} else {
+						canOpenDoor = false;
+					}
+					
+					const intersections = raycaster.intersectObjects( objects, false );
+
+					const onObject = intersections.length > 0;
+
+					const delta = ( time - prevTime ) / 1000;
+
+					velocity.x -= velocity.x * 10.0 * delta;
+					velocity.z -= velocity.z * 10.0 * delta;
+
+					velocity.y -= 9.8 * 100.0 * delta; // 100.0 = mass
+
+					direction.z = Number( moveForward ) - Number( moveBackward );
+					direction.x = Number( moveRight ) - Number( moveLeft );
+					direction.normalize(); // this ensures consistent movements in all directions
+
+					if ( moveForward || moveBackward ) velocity.z -= direction.z * 400.0 * delta;
+					if ( moveLeft || moveRight ) velocity.x -= direction.x * 400.0 * delta;
+
+					if ( onObject === true ) {
+						velocity.y = Math.max( 0, velocity.y );
+						canJump = true;
+					}
+
+					pointerLockControls.moveRight( - velocity.x * delta );
+					pointerLockControls.moveForward( - velocity.z * delta );
+					pointerLockControls.getObject().position.y += ( velocity.y * delta ); // new behavior
+
+					if ( pointerLockControls.getObject().position.y < 10 ) {
+						velocity.y = 0;
+						pointerLockControls.getObject().position.y = 10;
+						canJump = true;
+					}
+				}
+				prevTime = time;
+				renderer.render(scene, camera);
+
+ 			}
+
+		}
+
+		window.onload = init
+
+	</script>
+
+</body>
+
+</html>

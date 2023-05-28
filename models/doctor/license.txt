@@ -1,0 +1,11 @@
+Model Information:
+* title:	Dr Nick Riviera Walking (animated)
+* source:	https://sketchfab.com/3d-models/dr-nick-riviera-walking-animated-03638bc34bae45bbbc1ca4dfe491c767
+* author:	vicente betoret ferrero (https://sketchfab.com/deathcow)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Dr Nick Riviera Walking (animated)" (https://sketchfab.com/3d-models/dr-nick-riviera-walking-animated-03638bc34bae45bbbc1ca4dfe491c767) by vicente betoret ferrero (https://sketchfab.com/deathcow) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

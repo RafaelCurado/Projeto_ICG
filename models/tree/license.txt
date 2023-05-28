@@ -1,0 +1,11 @@
+Model Information:
+* title:	Basic Tree 2
+* source:	https://sketchfab.com/3d-models/basic-tree-2-5d939c00ad2e47208d201f9ce7bb966c
+* author:	pathetik (https://sketchfab.com/pathetik)
+
+Model License:
+* license type:	CC-BY-SA-4.0 (http://creativecommons.org/licenses/by-sa/4.0/)
+* requirements:	Author must be credited. Modified versions must have the same license. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Basic Tree 2" (https://sketchfab.com/3d-models/basic-tree-2-5d939c00ad2e47208d201f9ce7bb966c) by pathetik (https://sketchfab.com/pathetik) licensed under CC-BY-SA-4.0 (http://creativecommons.org/licenses/by-sa/4.0/)

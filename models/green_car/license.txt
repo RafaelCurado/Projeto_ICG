@@ -1,0 +1,11 @@
+Model Information:
+* title:	The Homer From The Simpsons Vs1.07
+* source:	https://sketchfab.com/3d-models/the-homer-from-the-simpsons-vs107-6c817ddb1c4f472bb4e0e6f9b056d961
+* author:	TTEPN (https://sketchfab.com/TTEPN)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "The Homer From The Simpsons Vs1.07" (https://sketchfab.com/3d-models/the-homer-from-the-simpsons-vs107-6c817ddb1c4f472bb4e0e6f9b056d961) by TTEPN (https://sketchfab.com/TTEPN) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
